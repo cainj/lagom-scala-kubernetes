@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: userservice
+spec:
+  serviceName: userservice
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: userservice
+    spec:
+      containers:
+      - name:  userservice
+        image: docker.io/cainj/user-service-impl
+        ports:
+         - containerPort: 9000
+           name: http-lagom-api
+         - containerPort: 2551
+           name: akka-remote
+        env:
+         - name: CASSANDRA_SERVICE_NAME
+           value: _native._tcp.cassandra.default.svc.cluster.local
+         - name: APPLICATION_SECRET
+           value: userservice-application-secret
+         - name: USERSERVICE_BIND_PORT
+           value: "9000"
+         - name: USERSERVICE_BIND_IP
+           value: "0.0.0.0"
+         - name: AKKA_ACTOR_SYSTEM_NAME
+           value: userservice-v1
+         - name: AKKA_REMOTING_BIND_PORT
+           value: "2551"
+         - name: AKKA_REMOTING_BIND_HOST
+           value: $HOSTNAME.userservice.default.svc.cluster.local
+         - name: AKKA_SEED_NODE_PORT
+           value: "2551"
+         - name: AKKA_SEED_NODES
+           value: "userservice-0.userservice.default.svc.cluster.local:2551,userservice-1.userservice.default.svc.cluster.local:2551,userservice-2.userservice.default.svc.cluster.local:2551"
+         - name: KAFKA_SERVICE_NAME
+           value: ""
+         - name: DEFAULT_KAFKA_BROKERS
+           value: "kafka-0.kafka-hs.default.svc.cluster.local:9093"
+         - name: POD_NAME
+           valueFrom:
+             fieldRef:
+               fieldPath: metadata.name
+         - name: POD_NAMESPACE
+           valueFrom:
+             fieldRef:
+               fieldPath: metadata.namespace
+        readinessProbe:
+          httpGet:
+            path: /_status/circuit-breaker/current
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 5

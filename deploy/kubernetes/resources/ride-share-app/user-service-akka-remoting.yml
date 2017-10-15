@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: userservice-akka-remoting
+  labels:
+    app: userservice
+spec:
+  ports:
+   - port: 2551
+     protocol: TCP
+     targetPort: 2551
+  selector:
+    app: userservice
